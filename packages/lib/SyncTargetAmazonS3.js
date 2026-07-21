@@ -5,6 +5,8 @@ const { FileApi } = require('./file-api.js');
 const Synchronizer = require('./Synchronizer').default;
 const { FileApiDriverAmazonS3 } = require('./file-api-driver-amazon-s3.js');
 const { S3Client, HeadBucketCommand } = require('@aws-sdk/client-s3');
+const { NodeHttpHandler } = require('@aws-sdk/node-http-handler');
+const shim = require('./shim').default;
 
 const newS3Client = options => {
 	const api = new S3Client(options);
@@ -66,7 +68,7 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 
 	// These are the settings that get read from disk to instantiate the API.
 	s3AuthParameters() {
-		return {
+		const params = {
 			// We need to set a region. See https://github.com/aws/aws-sdk-js-v3/issues/1845#issuecomment-754832210
 			region: Setting.value('sync.8.region'),
 			credentials: {
@@ -78,6 +80,11 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			endpoint: Setting.value('sync.8.url'),
 			ignoreTlsErrors: Setting.value('net.ignoreTlsErrors'),
 		};
+		const proxyAgents = shim.proxyAgentIfEnabled();
+		if (proxyAgents) {
+			params.requestHandler = new NodeHttpHandler(proxyAgents);
+		}
+		return params;
 	}
 
 	api() {
@@ -110,6 +117,10 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			endpoint: options.url(),
 			ignoreTlsErrors: options.ignoreTlsErrors(),
 		};
+		const proxyAgents = shim.proxyAgentIfEnabled();
+		if (proxyAgents) {
+			apiOptions.requestHandler = new NodeHttpHandler(proxyAgents);
+		}
 
 		const api = newS3Client(apiOptions);
 		const driver = new FileApiDriverAmazonS3(api, SyncTargetAmazonS3.s3BucketName());

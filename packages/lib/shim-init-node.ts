@@ -716,6 +716,21 @@ function shimInit(options: ShimInitOptions = null) {
 		return shim.httpAgent_.agent;
 	};
 
+	shim.proxyAgentIfEnabled = () => {
+		if (!proxySettings.proxyEnabled) return null;
+		const resolvedProxyUrl = resolveProxyUrl(proxySettings.proxyUrl);
+		if (!resolvedProxyUrl) return null;
+		const config = {
+			keepAlive: true,
+			maxSockets: proxySettings.maxConcurrentConnections,
+			keepAliveMsecs: 5000,
+			proxy: resolvedProxyUrl,
+			timeout: proxySettings.proxyTimeout * 1000,
+			ecdhCurve: tlsEcdhCurve,
+		};
+		return { httpAgent: new HttpProxyAgent(config), httpsAgent: new HttpsProxyAgent(config) };
+	};
+
 	shim.openOrCreateFile = (filepath, defaultContents) => {
 		// If the file doesn't exist, create it
 		if (!fs.existsSync(filepath)) {

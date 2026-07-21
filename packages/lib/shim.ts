@@ -450,6 +450,11 @@ const shim = {
 		throw new Error('Not implemented: httpAgent');
 	},
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- proxy agent is set per-platform, and returns null when proxy is disabled
+	proxyAgentIfEnabled: (): any => {
+		return null;
+	},
+
 	openOrCreateFile: (_path: string, _defaultContents: string): string => {
 		throw new Error('Not implemented: openOrCreateFile');
 	},
